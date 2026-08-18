@@ -30,3 +30,10 @@ core.*
 
 # Generated test dumps
 tests/unittests/dump_info/
+
+# Generated model / IR artifacts
+*.pdmodel
+*.pdiparams
+*.dot
+*.prototxt
+conv_bn_subgraph.json
