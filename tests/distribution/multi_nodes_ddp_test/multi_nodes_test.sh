@@ -39,5 +39,5 @@ cards=0,1,2,3
 export SDAA_VISIBLE_DEVICES=$cards
 export SDAA_VISIBLE_DEVICES=$cards
 export PADDLE_XCCL_BACKEND=sdaa
-python -m paddle.distributed.launch --devices=$cards --ips=$ip1,$ip2   test_${kind}.py 
+python -m paddle.distributed.launch --devices=$cards --ips=$ip1,$ip2   test_${kind}.py
 echo 'done!'

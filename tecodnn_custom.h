@@ -147,7 +147,7 @@ tecocustomStatus_t TECOCUSTOMWINAPI tecocustomResidualBlockForward(
 
 /**
  * @brief Processes a single step in sequence generation with block-based processing for encoder-decoder architectures
- * 
+ *
  * @param handle Handle to the Tecocustom library context
  * @param stopFlagsDesc Descriptor for flags indicating whether generation should stop for each sequence
  * @param stopFlags Pointer to stop flags data

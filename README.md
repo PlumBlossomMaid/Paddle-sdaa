@@ -1,119 +1,129 @@
-# PaddlePaddle Custom Device Implementation for Tecorigin SDAA
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![PaddlePaddle](https://img.shields.io/badge/PaddlePaddle-3.5-blue.svg)](https://github.com/PaddlePaddle/Paddle)
+[![SDAA](https://img.shields.io/badge/Tecorigin-SDAA-green.svg)](https://www.tecorigin.com/)
+[![Tests](https://img.shields.io/badge/CTest-194%20passed-brightgreen.svg)](tests/)
 
-English | [简体中文](./README_cn.md)
+[![EN](https://img.shields.io/badge/lang-EN-red.svg)](README.md)
+[![简体中文](https://img.shields.io/badge/lang-简体中文-blue.svg)](README.zh-CN.md)
+[![繁體中文](https://img.shields.io/badge/lang-繁體中文-green.svg)](README.zh-TW.md)
 
-Please refer to the following steps to compile, install and verify the custom device implementation for Tecorigin SDAA.
+# Paddle-sdaa
 
-## Tecorigin SDAA System Requirements
+**PaddlePaddle custom device backend for Tecorigin SDAA accelerators.**
 
-| Module      | Version  |
-| ---------   | -------- |
-| TecoDriver  | 2.0.2    |
-| TecoToolkit | 2.0.2    |
+Paddle-sdaa adapts PaddlePaddle's custom-device runtime to Tecorigin SDAA hardware. It provides SDAA kernel registration, runtime integration, Python package patches, training and inference smoke coverage, AMP and distributed communication support, and compatibility fallbacks for vendor runtime edge cases.
 
-## Prepare environment and source code
-```bash
-# 1. pull PaddlePaddle Tecorigin SDAA development docker image
-wget http://mirrors.tecorigin.com/repository/teco-docker-tar-repo/release/ubuntu22.04/x86_64/2.0.2/paddle-2.0.2-paddle_sdaa2.0.2.tar
-docker load < paddle-2.0.2-paddle_sdaa2.0.2.tar
+## Features
 
-# 2. refer to the following commands to start docker container and activate conda environment (PaddlePaddle framwork has been installed in the conda environment)
-docker run -it --name="paddle_sdaa_dev" --net=host -v $(pwd):/work \
---device=/dev/tcaicard0 --device=/dev/tcaicard1 \
---device=/dev/tcaicard2 --device=/dev/tcaicard3 \
---cap-add SYS_PTRACE --cap-add SYS_ADMIN --shm-size 64g \
-jfrog.tecorigin.net/tecotp-docker/release/ubuntu22.04/x86_64/paddle:2.0.2-paddle_sdaa2.0.2 /bin/bash
+- **Paddle Custom Device** -- registers SDAA as a Paddle custom backend with 269 custom kernels.
+- **Paddle 3.5 Compatibility** -- supports current Paddle attribute ABI changes such as `double` epsilon / porder handling.
+- **Training and Inference** -- includes a bounded MNIST smoke workflow covering training, export, inference, and cleanup.
+- **AMP Coverage** -- validates AMP paths including high-performance convolution and pipeline-parallel smoke tests.
+- **Distributed Support** -- covers XCCL communication streams, DDP optimizer, pipeline parallelism, tensor/model parallel tests, and sharding stage 2/3.
+- **FlashAttention Fallbacks** -- no-mask backward uses an SDAA fallback; masked forward/backward has an opt-in deterministic fallback for vendor-runtime limitations.
+- **Device APIs** -- supports `paddle.device.get_device_properties()`, `get_device_capability()`, and `get_device_name()` through package-side patches without modifying Paddle source.
+- **Open CI Friendly** -- GitHub Actions runs only pre-commit checks because public GitHub runners do not provide SDAA hardware or Tecorigin runtime libraries.
 
-conda activate paddle_env_py310
+## Repository Layout
 
-# 3. install paddlepaddle main framework
-python -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/ --force-reinstall
-
-# 4. clone the source code
-git clone https://github.com/PaddlePaddle/PaddleCustomDevice
-cd PaddleCustomDevice
+```text
+Paddle-sdaa/
+├── cmake/                  # CMake helpers and third-party wiring
+├── dynload/                # Dynamic library loading helpers
+├── external/               # External SDAA stream headers
+├── kernels/                # Paddle custom-device SDAA kernels
+├── runtime/                # Custom-device runtime implementation
+├── sdaa_ext/               # Python extension package and high-performance custom ops
+├── sdaac_ops/              # SDAAC custom op sources
+├── tests/                  # Unit, runtime, MNIST, and distributed tests
+├── tools/version/          # Runtime / stack version query utilities
+├── compile.sh              # Build entry point
+└── pr_ci_sdaa.sh           # Local CI script for SDAA machines
 ```
 
-## Installation and Verification
+## Requirements
 
-### Source Code Compile
+The public GitHub CI checks repository hygiene only. Building and running the backend requires a local SDAA environment:
+
+| Component | Notes |
+| --- | --- |
+| PaddlePaddle | Paddle 3.5 development build used during adaptation |
+| Tecorigin stack | SDAA runtime, driver, Tecodnn, Tecoblas, Tccl, Tecocustom, SDPTI |
+| Hardware | Tecorigin SDAA devices, for example `/dev/tcaicard*` |
+| Python | CPython 3.12 in the validated local environment |
+| CMake | Required for native build |
+
+## Build
 
 ```bash
-# 1. update cmake
-pip install -U cmake
+git clone https://github.com/PlumBlossomMaid/Paddle-sdaa.git
+cd Paddle-sdaa
 
-# 2. checkout branch to `develop`
-git checkout develop
+source /opt/tecoai/setvars.sh
+export PADDLE_SOURCE_DIR=/path/to/Paddle
 
-# 3. execute the following commands to update submodule
-git submodule sync
-git submodule update --init --recursive
-
-# 4. go to Tecorigin sdaa directory
-cd backends/sdaa
-
-# 5. execute compile script
 bash compile.sh
-
-# 6. install the generated whl package, which is under build/dist directory
-pip install build/dist/*.whl --force-reinstall
+python -m pip install --force-reinstall --no-deps build/dist/*.whl
 ```
 
-### Verification
+> The SDAA package intentionally does not pin NumPy. NumPy compatibility belongs to the Paddle framework package, not this backend package.
+
+## Quick Check
 
 ```bash
-# 1. using paddle_sdaa utils's `run_check` to check whether paddle-sdaa plugin and PaddlePaddle framework are installed.
-python3 -c "import paddle_sdaa; paddle_sdaa.utils.run_check()"
-# expected output:
-paddle-sdaa and paddlepaddle are installed successfully!
+python - <<'PY'
+import paddle
 
+paddle.set_device('sdaa')
+print(paddle.device.get_all_custom_device_type())
+print(paddle.device.get_device_properties())
+print(paddle.device.get_device_capability())
+print(paddle.device.get_device_name())
+print(paddle.nn.functional.relu(paddle.to_tensor([-2.0, 1.0])))
+PY
+```
 
-# 2. list available hardware backends
-python3 -c "import paddle; print(paddle.device.get_all_custom_device_type())"
-# expected ouput:
+Expected shape of the output:
+
+```text
 ['sdaa']
-
-# 3. inspect SDAA device properties
-python3 -c "import paddle; paddle.set_device('sdaa'); print(paddle.device.get_device_properties()); print(paddle.device.get_device_capability()); print(paddle.device.get_device_name())"
-
-# 4. run relu forward
-python3 -c "import paddle;paddle.set_device('sdaa');print(paddle.nn.functional.relu(paddle.to_tensor([-2., 1.])))"
-# expected output:
+_customDeviceProperties(name='/dev/tcaicard0', major=61440, minor=256, total_memory=15296MB, multi_processor_count=0)
+(61440, 256)
+/dev/tcaicard0
 Tensor(shape=[2], dtype=float32, place=Place(sdaa:0), stop_gradient=True,
        [0., 1.])
 ```
 
-## Train and Inference Demo
+## Test
+
+On an SDAA machine:
 
 ```bash
-# demo for training, evaluation and inference
-python tests/test_MNIST_model.py
-
-# training output as following
-Epoch [1/2], Iter [01/14], reader_cost: 1.41201 s, batch_cost: 1.56096 s, ips: 2624.03256 samples/s, eta: 0:00:43
-Epoch [1/2], Iter [02/14], reader_cost: 0.70611 s, batch_cost: 0.84809 s, ips: 4829.67512 samples/s, eta: 0:00:22
-... ...
-Epoch [2/2], Iter [14/14], reader_cost: 0.11122 s, batch_cost: 0.24438 s, ips: 16760.81762 samples/s, eta: 0:00:00
-Epoch ID: 2, Epoch time: 3.50429 s, reader_cost: 1.55708 s, batch_cost: 3.42131 s, avg ips: 16363.92196 samples/s
-Eval - Epoch ID: 2, Top1 accurary:: 0.84607, Top5 accurary:: 0.98462
-
-# inference output as following
-I0307 05:21:33.673595  6583 interpretercore.cc:237] New Executor is Running.
-I0307 05:21:33.703184  6583 analysis_predictor.cc:1503] CustomDevice is enabled
-... ...
-I0307 05:21:33.707281  6583 analysis_predictor.cc:1660] ======= optimize end =======
-I0307 05:21:33.707347  6583 naive_executor.cc:164] ---  skip [feed], feed -> inputs
-I0307 05:21:33.707659  6583 naive_executor.cc:164] ---  skip [linear_5.tmp_1], fetch -> fetch
-Output data size is 10
-Output data shape is (1, 10)
+ctest --test-dir build --output-on-failure -j 1
 ```
 
-## Environment Variables
+Current local validation status:
 
-| Subject     | Variable Name       | Type   | Description    | Default Value |
-| -------- | -------------------------------- | ------ | --------------------------------- | ------------------------------------------------------------ |
-| Debug     | CUSTOM_DEVICE_BLACK_LIST| String | Ops in back list will fallbacks to CPU  |  ""  |
-| Profiling     | ENABLE_SDPTI | String | enable sdpti | 1 |
-| Debug     | HIGH_PERFORMANCE_CONV | String | set HIGH_PERFORMANCE_CONV to `"1"` can enable high performance conv API | 0 |
-| Debug     | FLAGS_sdaa_runtime_debug    | bool   | print runtime information | false |
-| Feature   | FLAGS_sdaa_reuse_event      | bool   | enable event pool         | true  |
+- **194 / 194** registered CTest targets executed and passed in numbered batches.
+- No tests are hidden behind `unittest.skip`, `skipTest`, or `pytest.mark.skip`.
+- Key coverage includes common operators, MNIST smoke training/inference, FlashAttention, runtime/profiler, device APIs, communication streams, DDP optimizer, sharding stage 2/3, and pipeline parallel tests.
+
+## Compatibility Notes
+
+- `PADDLE_SDAA_FLASH_ATTN_MASKED_FALLBACK=1` enables the deterministic SDAA masked FlashAttention fallback when the vendor Tecocustom masked path is numerically unsuitable for a workload.
+- `paddle.device.get_device_properties()` reads real runtime data from `sdaaGetDeviceProperties` and `sdaaMemGetInfo`. `multi_processor_count` remains `0` because the exposed SDAA runtime structure does not provide an equivalent field.
+- Public GitHub CI cannot validate SDAA runtime behavior because hosted runners do not include SDAA devices or Tecorigin libraries.
+
+## CI
+
+This repository only runs pre-commit checks on GitHub:
+
+```bash
+pre-commit run --all-files --show-diff-on-failure
+```
+
+Hardware, runtime, and distributed tests must be run on an SDAA machine.
+
+## License
+
+Apache License 2.0.
