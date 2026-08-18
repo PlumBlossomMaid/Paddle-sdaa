@@ -31,13 +31,16 @@ Paddle-sdaa/
 ├── cmake/                  # CMake helpers and third-party wiring
 ├── dynload/                # Dynamic library loading helpers
 ├── external/               # External SDAA stream headers
+├── docs/                   # Status and fallback documentation
 ├── kernels/                # Paddle custom-device SDAA kernels
+├── patches/                # Patch strategy documentation
 ├── runtime/                # Custom-device runtime implementation
 ├── sdaa_ext/               # Python extension package and high-performance custom ops
 ├── sdaac_ops/              # SDAAC custom op sources
 ├── tests/                  # Unit, runtime, MNIST, and distributed tests
+├── tools/build.sh          # Build, install, test, and clean helper
 ├── tools/version/          # Runtime / stack version query utilities
-├── compile.sh              # Build entry point
+├── compile.sh              # Legacy build entry point
 └── pr_ci_sdaa.sh           # Local CI script for SDAA machines
 ```
 
@@ -62,8 +65,7 @@ cd Paddle-sdaa
 source /opt/tecoai/setvars.sh
 export PADDLE_SOURCE_DIR=/path/to/Paddle
 
-bash compile.sh
-python -m pip install --force-reinstall --no-deps build/dist/*.whl
+bash tools/build.sh --all
 ```
 
 > The SDAA package intentionally does not pin NumPy. NumPy compatibility belongs to the Paddle framework package, not this backend package.

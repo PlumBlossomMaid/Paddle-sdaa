@@ -31,13 +31,16 @@ Paddle-sdaa/
 ├── cmake/                  # CMake 輔助邏輯與第三方函式庫配置
 ├── dynload/                # 動態函式庫載入輔助
 ├── external/               # 外部 SDAA stream 標頭檔
+├── docs/                   # 狀態與 fallback 文件
 ├── kernels/                # Paddle custom-device SDAA kernels
+├── patches/                # patch 策略文件
 ├── runtime/                # custom-device runtime 實作
 ├── sdaa_ext/               # Python 擴充套件與高效能 custom ops
 ├── sdaac_ops/              # SDAAC custom op 原始碼
 ├── tests/                  # 單元測試、runtime、MNIST 與分散式測試
+├── tools/build.sh          # 建置、安裝、測試和清理輔助腳本
 ├── tools/version/          # runtime / 軟體棧版本查詢工具
-├── compile.sh              # 建置入口
+├── compile.sh              # 舊版建置入口
 └── pr_ci_sdaa.sh           # SDAA 機器上的本地 CI 腳本
 ```
 
@@ -62,8 +65,7 @@ cd Paddle-sdaa
 source /opt/tecoai/setvars.sh
 export PADDLE_SOURCE_DIR=/path/to/Paddle
 
-bash compile.sh
-python -m pip install --force-reinstall --no-deps build/dist/*.whl
+bash tools/build.sh --all
 ```
 
 > SDAA 套件不鎖定 NumPy 版本。NumPy 相容性由 Paddle 主框架套件負責，而不是後端插件負責。
