@@ -1,0 +1,32 @@
+# Build artifacts
+build/
+log/
+*.o
+*.so
+*.a
+*.whl
+*.egg
+*.egg-info/
+__pycache__/
+*.py[cod]
+
+# CMake / Ninja
+CMakeCache.txt
+CMakeFiles/
+.ninja_deps
+.ninja_log
+cmake_install.cmake
+Makefile
+
+# Runtime dumps
+core
+core.*
+*.tcdmp
+
+# Local editor / notebook state
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# Generated test dumps
+tests/unittests/dump_info/
