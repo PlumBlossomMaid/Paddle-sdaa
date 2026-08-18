@@ -37,3 +37,7 @@ tests/unittests/dump_info/
 *.dot
 *.prototxt
 conv_bn_subgraph.json
+
+# Local vendor headers
+sdcops.h
+tecodnn_custom.h
