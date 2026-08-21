@@ -38,8 +38,36 @@ Paddle-sdaa/
 | 硬件 | SDAA 设备，例如 `/dev/tcaicard*` |
 | Python | Paddle 源码构建支持的 CPython 3.11 或更高版本 |
 | 构建工具 | CMake、Ninja、GCC、Git |
+| Rust 工具链 | 当 `safetensors` 或其他第三方依赖需要源码编译时，需要 Rust/Cargo |
 
-## 一键构建
+### 源码构建时安装 Rust
+
+部分平台没有可用的 `safetensors` 预编译 wheel。这时 pip 会回退到使用 `maturin` 编译，而 `maturin` 需要 Rust 编译器和 Cargo。建议在安装构建依赖前先安装 Rust：
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env"
+rustc --version
+cargo --version
+```
+
+如果机器使用本地 HTTP 代理，请同时为 Rust 安装脚本和 pip 配置代理：
+
+```bash
+export http_proxy=http://127.0.0.1:7890
+export https_proxy=http://127.0.0.1:7890
+export HTTP_PROXY="$http_proxy"
+export HTTPS_PROXY="$https_proxy"
+```
+
+然后安装 Python 构建依赖：
+
+```bash
+python3 -m pip install -U pybind11 wheel ninja
+python3 -m pip install safetensors
+```
+
+如果系统包管理器已经提供 `rustc` 和 `cargo`，只需确认它们已经位于 `PATH`，不必重复使用 rustup 安装。只有在 pip 找不到兼容的预编译 wheel 时才需要 Rust。
 
 将 Paddle 源码克隆到本仓库旁边，然后运行统一构建脚本：
 

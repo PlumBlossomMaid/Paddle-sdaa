@@ -38,8 +38,38 @@ Building requires a Tecorigin SDAA development environment:
 | Hardware | SDAA devices such as `/dev/tcaicard*` |
 | Python | CPython 3.11 or newer supported by the Paddle source build |
 | Build tools | CMake, Ninja, GCC, Git |
+| Rust toolchain | Rust/Cargo, needed when `safetensors` or another third-party dependency is built from source |
 
-## One-command build
+### Rust toolchain for source builds
+
+Some platforms do not provide prebuilt wheels for `safetensors`. In that case pip falls back to `maturin`, which requires the Rust compiler and Cargo. Install Rust before installing the build dependencies:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env"
+rustc --version
+cargo --version
+```
+
+On a machine using the local HTTP proxy, configure the proxy for both the Rust installer and pip:
+
+```bash
+export http_proxy=http://127.0.0.1:7890
+export https_proxy=http://127.0.0.1:7890
+export HTTP_PROXY="$http_proxy"
+export HTTPS_PROXY="$https_proxy"
+export HTTP_PROXY="$http_proxy"
+export HTTPS_PROXY="$https_proxy"
+```
+
+Then install the Python build dependencies:
+
+```bash
+python3 -m pip install -U pybind11 wheel ninja
+python3 -m pip install safetensors
+```
+
+If a system package manager already provides `rustc` and `cargo`, verify that they are on `PATH` instead of installing Rust with rustup. Rust is only required when pip cannot use a compatible prebuilt wheel.
 
 Clone Paddle beside this repository, then run the unified build script:
 
