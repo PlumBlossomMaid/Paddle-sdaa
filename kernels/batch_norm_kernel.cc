@@ -129,7 +129,10 @@ void BatchNormKernel(const Context& dev_ctx,
 
   VLOG(4) << "Call SDAA BatchNormKernel";
 
-  // allocate memory for outputs
+  if (reserve_space != nullptr) {
+    reserve_space->Resize({1});
+    dev_ctx.template Alloc<T>(reserve_space);
+  }
   dev_ctx.template Alloc<T>(y);
   dev_ctx.template Alloc<float>(saved_mean);
   dev_ctx.template Alloc<float>(saved_variance);
@@ -177,7 +180,6 @@ void BatchNormGradKernel(
     phi::DenseTensor* d_x,
     phi::DenseTensor* d_scale,
     phi::DenseTensor* d_bias) {
-  VLOG(4) << "Call SDAA BatchNormGradKernel";
   use_global_stats = is_test || use_global_stats;
   // check arguments
   const auto& x_dims = x.dims();

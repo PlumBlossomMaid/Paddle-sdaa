@@ -29,10 +29,17 @@ void EmbeddingKernel(const Context &dev_ctx,
   dev_ctx.template Alloc<T>(out);
   auto mode = TECODNN_EMBEDDING_SCALE_GRAD_UNFRED;
   auto type = TECODNN_ARRAY_DENSE;
-  tecodnnDataType_t indice_dataType =
-      sdaa_ops::ToTecodnnDataType(inputx.dtype());
+  tecodnnDataType_t indice_dataType = TECODNN_DATA_INT32;
   tecodnnDataType_t weight_dataType =
       sdaa_ops::ToTecodnnDataType(phi::CppTypeToDataType<T>::Type());
+  phi::DenseTensor inputx_cast;
+  if (inputx.dtype() == phi::DataType::INT64) {
+    inputx_cast.Resize(inputx.dims());
+    dev_ctx.template Alloc<int32_t>(&inputx_cast);
+    sdaa_ops::doCastTensor(dev_ctx, inputx, &inputx_cast);
+  } else {
+    inputx_cast = inputx;
+  }
   int indicesBatch = 1;
   int indicesSeqLength = 1;
   if (inputx.dims().size() == 1) {
@@ -40,6 +47,10 @@ void EmbeddingKernel(const Context &dev_ctx,
   } else if (inputx.dims().size() == 2) {
     indicesBatch = inputx.dims()[0];
     indicesSeqLength = inputx.dims()[1];
+  } else {
+    PADDLE_THROW(phi::errors::InvalidArgument(
+        "embedding only supports 1-D or 2-D indices, but received rank %d",
+        inputx.dims().size()));
   }
   int weightSeqLength = weight.dims()[0];
   int weightVectSize = weight.dims()[1];
@@ -119,7 +130,7 @@ void EmbeddingKernel(const Context &dev_ctx,
                                         embeddingDesc,
                                         &alpha,
                                         indices_Desc,
-                                        inputx.data(),
+                                        inputx_cast.data(),
                                         weight_Desc,
                                         weight.data(),
                                         &beta,
@@ -161,7 +172,6 @@ void EmbeddingGradKernel(const Context &dev_ctx,
     indicesSeqLength = input.dims()[1];
   }
 
-  // switch input from int64 into int32
   phi::DenseTensor inputx_cast;
   if (input.dtype() == phi::DataType::INT64) {
     inputx_cast.Resize(input.dims());
@@ -170,6 +180,7 @@ void EmbeddingGradKernel(const Context &dev_ctx,
   } else {
     inputx_cast = input;
   }
+  const phi::DenseTensor& embedding_indices = inputx_cast;
 
   // set descriptors
   tecodnnHandle_t tecodnnHandle = GetHandleFromCTX(dev_ctx);

@@ -58,6 +58,33 @@ def resolve_op(name: str) -> Callable | None:
 def make_call(name: str, place: str) -> Callable[[], object] | None:
     if name.endswith(SKIP_SUFFIXES) or name in {"feed", "fetch", "memcpy_h2d", "memcpy_d2h"}:
         return None
+    if name in {"conv2d", "conv2d_grad", "depthwise_conv2d", "batch_norm", "batch_norm_infer", "layer_norm", "instance_norm"}:
+        previous = paddle.get_device()
+        paddle.set_device(place)
+        try:
+            x = paddle.randn([8, 8, 32, 32], dtype="float32")
+            if name in {"conv2d", "conv2d_grad", "depthwise_conv2d"}:
+                layer = paddle.nn.Conv2D(8, 8, 3, padding=1)
+                return lambda: layer(x)
+            if name == "batch_norm" or name == "batch_norm_infer":
+                layer = paddle.nn.BatchNorm2D(8)
+                return lambda: layer(x)
+            if name == "layer_norm":
+                layer = paddle.nn.LayerNorm([32, 32])
+                return lambda: layer(x)
+            layer = paddle.nn.InstanceNorm2D(8)
+            return lambda: layer(x)
+        finally:
+            paddle.set_device(previous)
+    if name in {"embedding", "embedding_grad"}:
+        previous = paddle.get_device()
+        paddle.set_device(place)
+        try:
+            layer = paddle.nn.Embedding(1024, 256)
+            ids = paddle.randint(0, 1024, [128, 32], dtype="int64")
+            return lambda: layer(ids)
+        finally:
+            paddle.set_device(previous)
     fn = resolve_op(name)
     if fn is None:
         return None
