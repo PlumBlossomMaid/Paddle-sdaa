@@ -39,7 +39,6 @@
 #include "tccl.h"            //NOLINT
 #include "tecoblas.h"        //NOLINT
 #include "tecodnn.h"         //NOLINT
-#include "tecodnn_custom.h"  //NOLINT
 #include "tools/version/minimum_supported_version.h"
 
 struct Version {

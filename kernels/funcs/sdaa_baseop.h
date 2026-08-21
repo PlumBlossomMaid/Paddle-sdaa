@@ -35,7 +35,7 @@
 #include "kernels/funcs/sdaa_funcs.h"
 #include "kernels/profiler/sdaa_wrapper.h"
 #include "paddle/phi/extension.h"
-#include "tecodnn_custom.h"  // NOLINT
+#include "tecocustom.h"  // NOLINT
 
 #define kSliceMaxNum 8
 #define StoragePropertiesCHWN 0

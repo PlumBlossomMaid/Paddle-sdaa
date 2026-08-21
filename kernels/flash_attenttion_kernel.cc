@@ -542,7 +542,6 @@ void FlashAttnGradKernel(
                                        1.0f,
                                        const_cast<void*>(softmax_lse.data()),
                                        attn_mode,
-                                       static_cast<bool>(attn_mask),
                                        custom_stream));
 }
 }  // namespace custom_kernel

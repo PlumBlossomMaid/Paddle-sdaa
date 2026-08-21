@@ -10,44 +10,11 @@
 
 #include "tecodnn.h"
 #include "tecocustom.h"
+#include "sdcops.h"
 
 namespace {
 
-sdaac::sdaacDataTypes_t ToSdaacDataType(DataTypes_t dtype) {
-  switch (dtype) {
-    case DATA_FLOAT:
-      return sdaac::DATA_FLOAT;
-    case DATA_HALF:
-      return sdaac::DATA_HALF;
-    case DATA_UINT8:
-      return sdaac::DATA_UINT8;
-    case DATA_INT8:
-      return sdaac::DATA_INT8;
-    case DATA_INT16:
-      return sdaac::DATA_INT16;
-    case DATA_INT32:
-      return sdaac::DATA_INT32;
-    case DATA_INT64:
-      return sdaac::DATA_INT64;
-    case DATA_BOOL:
-      return sdaac::DATA_BOOL;
-    case DATA_BFLOAT16:
-      return sdaac::DATA_BFLOAT16;
-    default:
-      return sdaac::DATA_FLOAT;
-  }
-}
-
-sdcStatus_t ToSdcStatus(sdaac::sdaacStatus_t status) {
-  switch (status) {
-    case sdaac::SDAAC_SUCCESS:
-      return SDC_SUCCESS;
-    case sdaac::SDAAC_NO_SUPPORT:
-      return SDC_NO_SUPPORT;
-    default:
-      return SDC_FAILED;
-  }
-}
+sdcStatus_t ToSdcStatus(sdcStatus_t status) { return status; }
 
 sdcStatus_t ToSdcStatus(tecodnnStatus_t status) {
   switch (status) {
@@ -276,20 +243,9 @@ tecodnnTensorDescriptor_t CreateByteTensorDesc(size_t bytes) {
   return CreateTensorDesc(dims, 1, DATA_INT8);
 }
 
-sdcStatus_t WithWorkspace(size_t n, const std::function<sdaac::sdaacStatus_t(void*)>& fn) {
+sdcStatus_t WithWorkspace(size_t n, const std::function<sdcStatus_t(void*)>& fn) {
   void* workspace = nullptr;
-  size_t workspace_size = sdaac::get_distributions_workspace(n);
-  if (workspace_size > 0 && sdaaMalloc(&workspace, workspace_size) != sdaaSuccess) {
-    return SDC_FAILED;
-  }
-  auto status = ToSdcStatus(fn(workspace));
-  if (sdaaDeviceSynchronize() != sdaaSuccess) {
-    status = SDC_FAILED;
-  }
-  if (workspace) {
-    sdaaFree(workspace);
-  }
-  return status;
+  return fn(workspace);
 }
 
 bool IsDevicePointer(const void* ptr) {
@@ -589,7 +545,7 @@ sdcStatus_t pd_dropout_kernel(const void* self,
                               uint64_t offset,
                               uint64_t max_threads,
                               sdaaStream_t stream) {
-  return ToSdcStatus(sdaac::dropout_kernel(self,
+  return ToSdcStatus(sdcops::dropout_kernel(self,
                                            result,
                                            mask,
                                            n,
@@ -610,8 +566,8 @@ sdcStatus_t pd_normal_kernel(void* result,
                              uint64_t max_threads,
                              sdaaStream_t stream) {
   return WithWorkspace(n, [&](void* workspace) {
-    return sdaac::normal_kernel(
-        result, workspace, n, mean, std, seed, offset, sdaac::DATA_FLOAT, stream);
+    return sdcops::normal_kernel(
+        result, n, mean, std, seed, offset, DATA_FLOAT, stream);
   });
 }
 
@@ -623,8 +579,8 @@ sdcStatus_t random_int_from_to_kernel(void* result,
                                       uint64_t offset,
                                       sdaaStream_t stream) {
   return WithWorkspace(n, [&](void* workspace) {
-    return sdaac::random_int_from_to_kernel(
-        result, workspace, n, range, base, seed, offset, stream);
+    return sdcops::random_int_from_to_kernel(
+        result, n, range, base, seed, offset, stream);
   });
 }
 

@@ -15,7 +15,7 @@
 #include <iostream>
 
 #include "kernels/funcs/nv_align.h"
-#include "kernels/funcs/sdaa_baseop.h"
+#include "sdcops.h"
 #include "paddle/phi/extension.h"  // 自定义Kernel依赖头文件
 
 namespace custom_kernel {
@@ -39,7 +39,7 @@ void GaussianRandomAlign(const Context& dev_ctx,
   custom_kernel::GetGPUConfig(mode, &max_threads, &sm_count);
   const uint64_t max_processor =
       static_cast<uint64_t>(max_threads) * static_cast<uint64_t>(sm_count);
-  sdaac::set_nv_max_processor(max_processor);
+  sdcops::set_nv_max_processor(max_processor);
   size_t max_grid_size = (max_processor + block_size - 1) / block_size;
   size_t grid_size =
       expect_grid_size > max_grid_size ? max_grid_size : expect_grid_size;
@@ -143,7 +143,7 @@ void GaussianRandomKernel(const Context& dev_ctx,
           sdaaSuccess,
           phi::errors::External("Failed to copy Gaussian samples to SDAA."));
     }
-    sdaa_ops::doCastTensor(dev_ctx, float_temp, out);
+    phi::Copy(dev_ctx, float_temp, out->place(), false, out);
   } else if (seed == 0) {
     phi::Copy(dev_ctx, host_temp, out->place(), false, out);
   } else {
