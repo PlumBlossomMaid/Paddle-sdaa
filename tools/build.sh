@@ -28,15 +28,15 @@ usage() {
 Usage: tools/build.sh [OPTIONS]
 
 Options:
-  -a, --all       Build and install Paddle, then build and install SDAA
-  -p, --paddle    Build and install Paddle from PADDLE_SOURCE_DIR
-  -s, --sdaa      Build and install the SDAA plugin (Paddle must be installed)
-  -b, --build     Build the SDAA plugin without installing its wheel
-  -i, --install   Install the latest built SDAA wheel
-  -t, --test      Run the registered CTest suite
-  -1, --single    Run one CTest target
-  -c, --clean     Remove Paddle and SDAA build directories
-  -h, --help      Show this message
+  -a, --all             Build and install Paddle, then build and install SDAA
+  -p, --paddle          Build and install Paddle from PADDLE_SOURCE_DIR
+  -m, --paddle_sdaa     Build and install the SDAA plugin
+  -b, --build           Build the SDAA plugin without installing its wheel
+  -i, --install         Install the latest built SDAA wheel
+  -t, --test            Run the registered CTest suite
+  -s, --single_test     Run one CTest target
+  -c, --clean           Remove Paddle and SDAA build directories
+  -h, --help            Show this message
 
 Environment:
   PADDLE_SOURCE_DIR  Paddle source tree (default: ../Paddle)
@@ -178,11 +178,11 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     -a|--all) build_paddle; build_sdaa; install_sdaa; shift ;;
     -p|--paddle) build_paddle; shift ;;
-    -s|--sdaa) build_sdaa; install_sdaa; shift ;;
+    -m|--paddle_sdaa|-s|--sdaa) build_sdaa; install_sdaa; shift ;;
     -b|--build) build_sdaa; shift ;;
     -i|--install) install_sdaa; shift ;;
     -t|--test) run_tests; shift ;;
-    -1|--single) run_single "${2:-}"; shift 2 ;;
+    -1|--single|--single_test) run_single "${2:-}"; shift 2 ;;
     -c|--clean) clean; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "ERROR: unknown option: $1" >&2; usage; exit 1 ;;

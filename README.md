@@ -59,12 +59,12 @@ bash tools/build.sh --all
 Useful modes:
 
 ```bash
-bash tools/build.sh --paddle   # build and install Paddle only
-bash tools/build.sh --sdaa     # build and install SDAA only
-bash tools/build.sh --build    # build SDAA without installing its wheel
-bash tools/build.sh --install  # install the latest SDAA wheel
-bash tools/build.sh --test     # run the CTest suite
-bash tools/build.sh --clean    # remove Paddle and SDAA build directories
+bash tools/build.sh --all       # build Paddle and paddle_sdaa
+bash tools/build.sh --paddle    # build Paddle only
+bash tools/build.sh --paddle_sdaa  # build paddle_sdaa only
+bash tools/build.sh --test      # run all CTest targets
+bash tools/build.sh --single_test test_MNIST_model
+bash tools/build.sh --clean
 ```
 
 Override paths and parallelism when needed:

@@ -59,12 +59,12 @@ bash tools/build.sh --all
 常用模式：
 
 ```bash
-bash tools/build.sh --paddle   # 只构建并安装 Paddle
-bash tools/build.sh --sdaa     # 只构建并安装 SDAA
-bash tools/build.sh --build    # 构建 SDAA，但不安装 wheel
-bash tools/build.sh --install  # 安装最新 SDAA wheel
-bash tools/build.sh --test     # 运行 CTest 测试
-bash tools/build.sh --clean    # 删除 Paddle 和 SDAA 构建目录
+bash tools/build.sh --all          # 编译 Paddle 和 paddle_sdaa
+bash tools/build.sh --paddle       # 只编译 Paddle
+bash tools/build.sh --paddle_sdaa  # 只编译 paddle_sdaa
+bash tools/build.sh --test         # 运行全部 CTest
+bash tools/build.sh --single_test test_MNIST_model
+bash tools/build.sh --clean
 ```
 
 需要覆盖路径或并行度时：
