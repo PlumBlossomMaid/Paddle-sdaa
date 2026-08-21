@@ -51,18 +51,11 @@ class TestArgsortOp(OpTest):
 
     def get_output(self):
         if self.descending:
-            # self.indices = np.flip(
-            #     np.argsort(self.x, kind="heapsort", axis=self.axis), self.axis
-            # )
-            # do not support output indices
-            self.indices = np.arange(len(self.x))
-            self.sorted_x = np.flip(
-                np.sort(self.x, kind="heapsort", axis=self.axis), self.axis
-            )
+            self.indices = np.argsort(-self.x, kind="stable", axis=self.axis)
+            self.sorted_x = np.take_along_axis(self.x, self.indices, axis=self.axis)
         else:
-            # self.indices = np.argsort(self.x, kind="heapsort", axis=self.axis)
-            self.indices = np.arange(len(self.x))
-            self.sorted_x = np.sort(self.x, kind="heapsort", axis=self.axis)
+            self.indices = np.argsort(self.x, kind="stable", axis=self.axis)
+            self.sorted_x = np.take_along_axis(self.x, self.indices, axis=self.axis)
 
     def set_sdaa(self):
         self.__class__.use_custom_device = True
@@ -83,6 +76,11 @@ class TestArgsortOp(OpTest):
 
     def init_direction(self):
         self.descending = True
+
+
+class TestArgsortAscending(TestArgsortOp):
+    def init_direction(self):
+        self.descending = False
 
 
 if __name__ == "__main__":

@@ -43,12 +43,6 @@ void ArgsortKernel(const Context& dev_ctx,
                    phi::DenseTensor* output,
                    phi::DenseTensor* indices) {
   VLOG(4) << "call sdaa ArgsortKernel";
-  PADDLE_ENFORCE_EQ(
-      descending,
-      true,
-      phi::errors::InvalidArgument("tecodnn only support descending = true."
-                                   "But recived: descending is %d",
-                                   descending));
   int dim_size = in.dims().size();
   if (axis < 0) {
     axis += dim_size;
@@ -78,6 +72,25 @@ void ArgsortKernel(const Context& dev_ctx,
   dev_ctx.template Alloc<int64_t>(indices);
   std::vector<int> ind_dimensions(1, Len);
 
+  phi::DenseTensor transformed;
+  const void* sort_input = in.data();
+  if (!descending) {
+    transformed.set_meta(in.meta());
+    dev_ctx.template Alloc<T>(&transformed);
+    phi::Copy(dev_ctx, in, transformed.place(), false, &transformed);
+    tecodnnTensorDescriptor_t transform_desc =
+        sdaa_ops::GetTecodnnTensorDesc(
+            ind_dimensions, in.dtype(), TensorFormat::Undefined);
+    tecodnnHandle_t transform_handle = GetHandleFromCTX(dev_ctx);
+    const float negate = -1.0f;
+    TECODNN_CHECK(tecodnnScaleTensor(transform_handle,
+                                     transform_desc,
+                                     transformed.data(),
+                                     &negate));
+    TECODNN_CHECK(tecodnnDestroyTensorDescriptor(transform_desc));
+    sort_input = transformed.data();
+  }
+
   tecodnnHandle_t tecodnnHandle = GetHandleFromCTX(dev_ctx);
   tecodnnTensorDescriptor_t x_Desc = sdaa_ops::GetTecodnnTensorDesc(
       ind_dimensions, in.dtype(), TensorFormat::Undefined);
@@ -89,7 +102,7 @@ void ArgsortKernel(const Context& dev_ctx,
   TECODNN_CHECK(tecodnnGetTopkExWorkspaceSize(tecodnnHandle,
                                               axis,
                                               Len,
-                                              descending,
+                                              true,
                                               true,
                                               x_Desc,
                                               y_Desc,
@@ -98,31 +111,37 @@ void ArgsortKernel(const Context& dev_ctx,
   phi::DenseTensor dev_workspace;
   dev_workspace.Resize(phi::make_ddim({static_cast<int64_t>(workspace_size)}));
   dev_ctx.Alloc(&dev_workspace, phi::DataType::INT8);
+  phi::DenseTensor sorted_transformed;
+  void* sort_output = output->data();
+  if (!descending) {
+    sorted_transformed.set_meta(output->meta());
+    dev_ctx.template Alloc<T>(&sorted_transformed);
+    sort_output = sorted_transformed.data();
+  }
   TECODNN_CHECK(tecodnnTopkEx(tecodnnHandle,
                               axis,
                               Len,
-                              descending,
+                              true,
                               true,
                               x_Desc,
-                              in.data(),
+                              sort_input,
                               y_Desc,
-                              output->data(),
+                              sort_output,
                               index_Desc,
                               indices->data(),
                               dev_workspace.data(),
                               workspace_size));
-  int64_t start = 0;
-  int64_t end = indices->numel();
-  int64_t step = 1;
-  tecodnnTensorDescriptor_t indices_Desc = sdaa_ops::GetTecodnnTensorDesc(
-      ind_dimensions, indices->dtype(), TensorFormat::Undefined);
-  // set indices to range(0, Len), to solve core dump error for argsort_grad!
-  TECODNN_CHECK(tecodnnArange(
-      tecodnnHandle, &start, &end, &step, indices_Desc, indices->data()));
+  if (!descending) {
+    const float negate = -1.0f;
+    TECODNN_CHECK(tecodnnScaleTensor(tecodnnHandle,
+                                     y_Desc,
+                                     sorted_transformed.data(),
+                                     &negate));
+    phi::Copy(dev_ctx, sorted_transformed, output->place(), false, output);
+  }
   TECODNN_CHECK(tecodnnDestroyTensorDescriptor(x_Desc));
   TECODNN_CHECK(tecodnnDestroyTensorDescriptor(index_Desc));
   TECODNN_CHECK(tecodnnDestroyTensorDescriptor(y_Desc));
-  TECODNN_CHECK(tecodnnDestroyTensorDescriptor(indices_Desc));
 }
 
 }  // namespace custom_kernel
