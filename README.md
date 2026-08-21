@@ -51,17 +51,6 @@ rustc --version
 cargo --version
 ```
 
-On a machine using the local HTTP proxy, configure the proxy for both the Rust installer and pip:
-
-```bash
-export http_proxy=http://127.0.0.1:7890
-export https_proxy=http://127.0.0.1:7890
-export HTTP_PROXY="$http_proxy"
-export HTTPS_PROXY="$https_proxy"
-export HTTP_PROXY="$http_proxy"
-export HTTPS_PROXY="$https_proxy"
-```
-
 Then install the Python build dependencies:
 
 ```bash

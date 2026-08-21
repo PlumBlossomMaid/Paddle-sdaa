@@ -51,15 +51,6 @@ rustc --version
 cargo --version
 ```
 
-如果机器使用本地 HTTP 代理，请同时为 Rust 安装脚本和 pip 配置代理：
-
-```bash
-export http_proxy=http://127.0.0.1:7890
-export https_proxy=http://127.0.0.1:7890
-export HTTP_PROXY="$http_proxy"
-export HTTPS_PROXY="$https_proxy"
-```
-
 然后安装 Python 构建依赖：
 
 ```bash
